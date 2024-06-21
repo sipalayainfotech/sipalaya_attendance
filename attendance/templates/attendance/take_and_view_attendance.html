@@ -1,0 +1,132 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Take Attendance and View Report</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="group">Group:</label>
+                    <select id="group" name="group_id" class="form-control" required>
+                        <option value="">Select a group</option>
+                        {% for group in groups %}
+                        <option value="{{ group.id }}" {% if group.id == selected_group_id %}selected{% endif %}>{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date:</label>
+                    <input type="date" id="date" name="date" class="form-control" value="{{ date }}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Load Students</button>
+            </form>
+
+            {% if group %}
+            <hr>
+             <h3 class="mt-4">Take Attendance for {{ group.name }} on {{ date }}</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="group_id" value="{{ group.id }}">
+                <input type="hidden" name="date" value="{{ date }}">
+                <div class="form-group">
+                    {% for student in students %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="attendance_{{ student.id }}" name="attendance" value="{{ student.id }}" {% if student.attendance_status %}checked{% endif %}>
+                        <label class="form-check-label" for="attendance_{{ student.id }}">{{ student.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Attendance</button>
+            </form> 
+           
+
+
+
+            <hr>
+            <h3 class="mt-4">Attendance Summary for {{ group.name }}</h3>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Student Name</th>
+                            <th>Total Present Days</th>
+                            <th>Total Absent Days</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for summary in student_summaries %}
+                        <tr>
+                            <td>{{ summary.student.id }}</td>
+                            <td>{{ summary.student.name }}</td>
+                            <td>{{ summary.total_present_days }}</td>
+                            <td>{{ summary.total_absent_days }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<style>
+.card {
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: #007bff;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .table-responsive table {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .table-responsive table {
+        font-size: 0.8rem;
+    }
+}
+
+
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const getCellValue = (row, index) => {
+        const cell = row.children[index];
+        return cell ? (cell.innerText || cell.textContent) : '';
+    };
+
+    const comparer = (index, asc) => (a, b) => {
+        const valA = getCellValue(asc ? a : b, index);
+        const valB = getCellValue(asc ? b : a, index);
+        return isNaN(valA) || isNaN(valB) ? valA.localeCompare(valB) : valA - valB;
+    };
+
+    document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+        const table = th.closest('table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const index = Array.from(th.parentNode.children).indexOf(th);
+        rows.sort(comparer(index, this.asc = !this.asc)).forEach(row => tbody.appendChild(row));
+    })));
+});
+</script>
